@@ -1,61 +1,65 @@
-import React, { useState, useEffect } from "react"; // Importa os hooks do React para gerenciar o estado e efeitos
-// hooks são funções que permitem adicionar funcionalidades a componentes funcionais sem a necessidade de escrever uma classe.
-// useState: usado para criar e gerenciar estados em componentes funcionais.
-// useEffect: usado para executar efeitos colaterais, como buscar dados ou manipular o DOM, em componentes funcionais.
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native"; // Componentes do React Native para criar a interface
-import * as SecureStore from "expo-secure-store"; // Importa o módulo para salvar e carregar dados de forma persistente
-// SecureStore é uma API do Expo que permite salvar e carregar dados de forma segura e persistente em um dispositivo.
-// Persistência de dados na web: é a capacidade de manter os dados mesmo após o fechamento do navegador e usamos o localStorage para isso.
+import React, { useState, useEffect } from "react"; // Importa React e hooks useState e useEffect
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import * as SecureStore from "expo-secure-store"; // Importa SecureStore para armazenamento seguro
+
+// Componente que recebe um texto como prop e exibe na tela
+// Props esperadas: titulo, texto e cor
+// Props é um objeto que contém informações passadas de um componente pai para um componente filho
+// Props são somente leitura e não podem ser alteradas
+const TextoExibido = ({ titulo, texto, cor }) => (
+    <Text style={[styles.texto, { color: cor }]}>
+        {titulo}: {texto || "Nenhum texto salvo"}
+    </Text>
+);
 
 export default function HomeScreen({ navigation }) {
-    const [texto, setTexto] = useState(""); // Estado para armazenar o texto digitado pelo usuário
-    const [textoPersistido, setTextoPersistido] = useState(""); // Estado para armazenar o texto que foi salvo de forma persistente
-    const [textoSalvoSemPersistencia, setTextoSalvoSemPersistencia] = useState(""); // Estado para mostrar o texto não persistido
+    const [texto, setTexto] = useState(""); // Estado para armazenar o texto digitado
+    const [textoPersistido, setTextoPersistido] = useState(""); // Estado para armazenar o texto persistido
+    const [textoSalvoSemPersistencia, setTextoSalvoSemPersistencia] = useState(""); // Estado para armazenar o texto salvo sem persistência
 
-    // Carrega o texto salvo na persistência ao iniciar a tela
+    // useEffect é um hook que executa uma função após a renderização do componente
+    // Recebe uma função de callback e um array de dependências
+    // callback é a função que será executada após a renderização
     useEffect(() => {
         const carregarTextoPersistido = async () => {
-            // async/await: usado para lidar com operações assíncronas de forma mais simples.
-            const textoSalvo = await SecureStore.getItemAsync("meuTexto"); // Carrega o texto salvo
+            const textoSalvo = await SecureStore.getItemAsync("meuTexto"); // Carrega o texto persistido do SecureStore
             if (textoSalvo) {
-                setTextoPersistido(textoSalvo); // Atualiza o estado com o texto carregado
+                setTextoPersistido(textoSalvo); // Atualiza o estado com o texto persistido
             }
         };
-        carregarTextoPersistido(); // Executa a função ao carregar a tela
-    }, []); // O array vazio faz a execução acontecer apenas uma vez
+        carregarTextoPersistido(); // Chama a função para carregar o texto persistido quando o componente é montado
+    }, []);
 
-    // Função para salvar o texto na persistência
     const salvarTexto = async () => {
         if (!texto.trim()) {
-            // Verifica se o texto não está vazio
-            alert("Por favor, insira algo."); // Se estiver vazio, mostra um alerta
+            alert("Por favor, insira algo.");
             return;
         }
-        await SecureStore.setItemAsync("meuTexto", texto); // Salva o texto na persistência
-        setTextoPersistido(texto); // Atualiza o estado com o texto salvo
-        setTextoSalvoSemPersistencia(texto); // Atualiza o estado com o texto atual
-        setTexto(""); // Limpa o campo de entrada
+        await SecureStore.setItemAsync("meuTexto", texto); // Salva o texto no SecureStore
+        setTextoPersistido(texto); // Atualiza o estado com o texto persistido
+        setTextoSalvoSemPersistencia(texto); // Atualiza o estado com o texto salvo sem persistência
+        setTexto(""); // Limpa o campo de texto
     };
 
-    // Função para limpar o texto salvo da persistência
     const limparTexto = async () => {
-        await SecureStore.deleteItemAsync("meuTexto"); // Deleta o texto da persistência
+        await SecureStore.deleteItemAsync("meuTexto"); // Remove o texto do SecureStore
         setTextoPersistido(""); // Limpa o estado do texto persistido
-        setTextoSalvoSemPersistencia(""); // Limpa o estado do texto não persistido
-        alert("Texto apagado da persistência!"); // Exibe uma mensagem de confirmação
+        setTextoSalvoSemPersistencia(""); // Limpa o estado do texto salvo sem persistência
+        alert("Texto apagado da persistência!"); // Alerta que o texto foi apagado
     };
 
     return (
         <View style={styles.container}>
             <Text style={styles.titulo}>Persistência e Navegação</Text>
             <TextInput
-                style={styles.input} // Aplica estilo ao campo de texto
-                placeholder="Digite algo" // Texto de exemplo no campo de entrada
-                value={texto} // Valor do campo de texto
-                onChangeText={setTexto} // Atualiza o estado sempre que o texto muda
+                style={styles.input}
+                placeholder="Digite algo"
+                value={texto}
+                onChangeText={setTexto}
             />
-            <Text style={styles.textoNaoPersistido}>Sem persistência: {textoSalvoSemPersistencia || "Nenhum texto salvo"}</Text>
-            <Text style={styles.textoPersistido}>Texto persistido: {textoPersistido || "Nenhum texto salvo"}</Text>
+
+            <TextoExibido titulo="Sem persistência" texto={textoSalvoSemPersistencia} cor="red" />
+            <TextoExibido titulo="Texto persistido" texto={textoPersistido} cor="green" />
 
             <TouchableOpacity style={styles.botao} onPress={salvarTexto}>
                 <Text style={styles.textoBotao}>Salvar</Text>
@@ -65,7 +69,10 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.textoBotao}>Limpar</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.botao} onPress={() => navigation.navigate("Detalhes", { textoNaoPersistido: textoSalvoSemPersistencia })}>
+            <TouchableOpacity
+                style={styles.botao}
+                onPress={() => navigation.navigate("Detalhes", { textoNaoPersistido: textoSalvoSemPersistencia })}
+            >
                 <Text style={styles.textoBotao}>Detalhes</Text>
             </TouchableOpacity>
         </View>
@@ -74,35 +81,31 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1, // Faz o container ocupar toda a tela
-        paddingVertical: 100, // Adiciona espaçamento vertical
-        paddingHorizontal: 25, // Adiciona espaçamento horizontal
-        gap: 20, // Adiciona espaçamento entre os componentes
+        flex: 1, // Faz o container ocupar todo o espaço disponível
+        paddingVertical: 100, // Espaçamento vertical
+        paddingHorizontal: 25, // Espaçamento horizontal
+        gap: 20, // Espaçamento entre os elementos
     },
     titulo: {
         fontSize: 32, // Tamanho da fonte do título
-        textAlign: "center", // Centraliza o título
+        textAlign: "center", // Alinhamento do texto ao centro
     },
     input: {
-        borderWidth: 1, // Largura da borda do campo de entrada
-        borderColor: "gray", // Cor da borda
-        borderRadius: 8, // Bordas arredondadas
-        padding: 10, // Adiciona espaçamento interno
-        fontSize: 20, // Tamanho da fonte dentro do campo
+        borderWidth: 1, // Largura da borda do input
+        borderColor: "gray", // Cor da borda do input
+        borderRadius: 8, // Arredondamento das bordas do input
+        padding: 10, // Espaçamento interno do input
+        fontSize: 20, // Tamanho da fonte do input
     },
-    textoNaoPersistido: {
-        fontSize: 20, // Tamanho da fonte do texto não persistido
-        color: "red", // Cor do texto
-    },
-    textoPersistido: {
-        fontSize: 20, // Tamanho da fonte do texto persistido
-        color: "green", // Cor do texto persistido
+    texto: {
+        fontSize: 20, // Tamanho da fonte do texto
+        textAlign: "center", // Alinhamento do texto ao centro
     },
     botao: {
         backgroundColor: "blue", // Cor de fundo do botão
-        padding: 10, // Adiciona espaçamento interno
-        borderRadius: 8, // Bordas arredondadas no botão
-        alignItems: "center", // Centraliza o texto dentro do botão
+        padding: 10, // Espaçamento interno do botão
+        borderRadius: 8, // Arredondamento das bordas do botão
+        alignItems: "center", // Alinhamento dos itens ao centro
     },
     textoBotao: {
         color: "white", // Cor do texto do botão

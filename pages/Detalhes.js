@@ -1,49 +1,62 @@
-import React, { useState, useEffect } from "react"; // Importa os hooks do React para gerenciar estado e efeitos colaterais
-import { View, Text, StyleSheet } from "react-native"; // Componentes do React Native para criação de interfaces
-import * as SecureStore from "expo-secure-store"; // Módulo para salvar e carregar dados de forma segura e persistente
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import * as SecureStore from "expo-secure-store";
 
-// Tela de detalhes que mostra os textos
-export default function DetalhesScreen() {
-    const [textoNaoPersistido, setTextoNaoPersistido] = useState(""); // Estado para o texto não persistido
-    const [textoPersistido, setTextoPersistido] = useState(""); // Estado para armazenar o texto que foi persistido
-    // useState: usado para criar e gerenciar estados em componentes funcionais.
+// Componente que recebe um texto como prop e exibe na tela
+// Props esperadas: titulo, texto e cor
+// Props é um objeto que contém informações passadas de um componente pai para um componente filho
+// Props são somente leitura e não podem ser alteradas
+const TextoExibido = ({ titulo, texto, cor }) => (
+    <Text style={[styles.texto, { color: cor }]}>
+        {titulo}: {texto || "Nenhum texto salvo"}
+    </Text>
+);
 
-    // Carrega o texto persistido ao entrar na tela
+export default function DetalhesScreen({ route }) {
+    // Recebe a prop da navegação
+    const { textoNaoPersistido } = route.params || {};
+    // Estado para armazenar o texto persistido
+    const [textoPersistido, setTextoPersistido] = useState("");
+
+    // useEffect para carregar o texto persistido ao montar o componente
     useEffect(() => {
-        // useEffect: usado para executar efeitos colaterais, como buscar dados ou manipular o DOM, em componentes funcionais.
         const carregarTextoPersistido = async () => {
-            // Busca o texto salvo na persistência de forma assíncrona
-            const textoSalvo = await SecureStore.getItemAsync("meuTexto"); // Acessa o texto salvo
+            // Obtém o texto salvo do SecureStore
+            const textoSalvo = await SecureStore.getItemAsync("meuTexto");
             if (textoSalvo) {
-                setTextoPersistido(textoSalvo); // Atualiza o estado com o texto carregado
+                // Atualiza o estado com o texto salvo
+                setTextoPersistido(textoSalvo);
             }
         };
-        carregarTextoPersistido(); // Executa a função para carregar o texto quando a tela for aberta
-    }, []); // O array vazio faz com que a execução aconteça apenas uma vez ao montar o componente
+        carregarTextoPersistido();
+    }, []);
 
     return (
         <View style={styles.container}>
             <Text style={styles.titulo}>Detalhes</Text>
-            <Text style={styles.texto}>Persistência: {textoPersistido || "Nenhum texto salvo"}</Text>
-            <Text style={styles.texto}>Sem persistência: {textoNaoPersistido || "Nenhum texto digitado"}</Text>
+            <TextoExibido titulo="Sem persistência" texto={textoNaoPersistido} cor="red" />
+             <TextoExibido titulo="Persistência" texto={textoPersistido} cor="green" />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+
     container: {
-        flex: 1, // Faz o container ocupar toda a tela
-        gap: 50, // Adiciona espaçamento entre os componentes
-        paddingVertical: 100, // Adiciona espaçamento vertical
-        paddingHorizontal: 25, // Adiciona espaçamento horizontal
+        flex: 1, // Faz o container ocupar todo o espaço disponível
+        gap: 50, // Espaçamento entre os elementos filhos
+        paddingVertical: 100, // Espaçamento vertical interno
+        paddingHorizontal: 25, // Espaçamento horizontal interno
     },
+
     titulo: {
-        fontSize: 32, // Tamanho da fonte do título
-        textAlign: "center", // Centraliza o título
-        textDecorationLine: "underline", // Adiciona sublinhado ao título
+        fontSize: 32, // Tamanho da fonte
+        textAlign: "center", // Alinhamento do texto ao centro
+        textDecorationLine: "underline", // Sublinhado no texto
     },
+
     texto: {
-        fontSize: 20, // Tamanho da fonte do texto
-        textAlign: "center", // Centraliza o texto
+        fontSize: 20, // Tamanho da fonte
+        textAlign: "center", // Alinhamento do texto ao centro
     },
 });
